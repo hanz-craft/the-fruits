@@ -38,7 +38,6 @@
             height: 100%;
             z-index: 0;
             pointer-events: none;
-            /* Allow clicks to pass through */;
         }
 
         /* ─── HEADER ─── */
@@ -711,6 +710,8 @@
             overflow: hidden;
             border: 4px solid rgba(255, 217, 61, 0.3);
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            background: #1a1a2e;
+            min-height: 200px;
         }
         #gesture-video {
             width: 100%;
@@ -718,6 +719,7 @@
             transform: scaleX(-1);
             background: #1a1a2e;
             border-radius: 20px;
+            min-height: 200px;
         }
         #gesture-canvas {
             position: absolute;
@@ -999,6 +1001,36 @@
         #gesture-camera-overlay .btn-start-camera:hover {
             transform: scale(1.04);
         }
+
+        /* ─── GESTURE VIDEO LOADING ─── */
+        .gesture-loading {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #fff;
+            font-size: 1.2rem;
+            font-weight: 700;
+            text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+            z-index: 3;
+        }
+        .gesture-loading.show {
+            display: block;
+        }
+        .gesture-loading .spinner {
+            display: inline-block;
+            animation: spin 1s linear infinite;
+            font-size: 2rem;
+        }
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
     </style>
 </head>
 <body>
@@ -1010,14 +1042,14 @@
     <header class="header">
         <h1>
             <span>🍎</span> Fruits Fun <span>🍌</span>
-            <span style="font-size:0.6em; opacity:0.8; font-weight:400;">By: Teacher Hanz Balili</span>
+            <span style="font-size:0.6em; opacity:0.8; font-weight:400;">By Teacher Hanz Balili</span>
         </h1>
     </header>
 
     <!-- ─── TABS ─── -->
     <nav class="tabs" id="tabNav">
         <button class="tab-btn active" data-page="vocab"><span class="emoji-tab">📖</span> Vocabulary Words</button>
-        <button class="tab-btn" data-page="sentences"><span class="emoji-tab">💬</span> Sentence Structures</button>
+        <button class="tab-btn" data-page="sentences"><span class="emoji-tab">💬</span> Sentence Structure </button>
         <button class="tab-btn" data-page="games"><span class="emoji-tab">🎮</span> Games</button>
     </nav>
 
@@ -1090,7 +1122,7 @@
                 <!-- GAME 2: Fruit Quiz -->
                 <div class="game-box" id="gameQuiz">
                     <div class="game-title">🤔 Fruit Quiz</div>
-                    <div class="game-desc">What fruit is it? Tap the correct name!</div>
+                    <div class="game-desc">What fruit is this? Tap the correct name!</div>
                     <div class="quiz-area" id="quizArea">
                         <span class="quiz-fruit-display" id="quizFruit">🍎</span>
                         <div class="quiz-options" id="quizOptions"></div>
@@ -1106,9 +1138,12 @@
                     <div class="game-title">✋ Gesture Game</div>
                     <div class="game-desc">Raise your left or right hand to answer!</div>
                     <div class="gesture-area" id="gestureArea">
-                        <div class="gesture-webcam-container">
+                        <div class="gesture-webcam-container" id="gestureContainer">
                             <video id="gesture-video" autoplay playsinline></video>
                             <canvas id="gesture-canvas"></canvas>
+                            <div class="gesture-loading" id="gestureLoading">
+                                <span class="spinner">🔄</span> Loading camera...
+                            </div>
                             <!-- Camera overlay -->
                             <div id="gesture-camera-overlay">
                                 <span class="icon">📷</span>
@@ -1132,7 +1167,7 @@
                         <div class="gesture-score" id="gestureScore">⭐ Score: 0</div>
                         <button class="gesture-next" id="gestureNext">Next ➜</button>
                         <div class="gesture-progress" id="gestureProgress">Question 1 / 8</div>
-                        <div class="gesture-camera-status" id="gestureCameraStatus">📷 Camera: Starting...</div>
+                        <div class="gesture-camera-status" id="gestureCameraStatus">📷 Camera: Ready</div>
                     </div>
                 </div>
 
@@ -1246,39 +1281,45 @@
         //  FRUIT DATA (20 fruits)
         // ═══════════════════════════════════════════════════════════════
         const FRUITS = [
-            { emoji: '🍎', name: 'apple' },
-            { emoji: '🍌', name: 'banana' },
-            { emoji: '🍊', name: 'orange' },
-            { emoji: '🍇', name: 'grape' },
-            { emoji: '🍓', name: 'strawberry' },
-            { emoji: '🍉', name: 'watermelon' },
-            { emoji: '🍑', name: 'peach' },
-            { emoji: '🍒', name: 'cherry' },
-            { emoji: '🍍', name: 'pineapple' },
-            { emoji: '🥝', name: 'kiwi' },
-            { emoji: '🍋‍🟩', name: 'lime' },
-            { emoji: '🥭', name: 'mango' },
-            { emoji: '🍐', name: 'pear' },
-            { emoji: '🍊', name: 'orange' }
+            { emoji: '🍎', name: 'Apple' },
+            { emoji: '🍌', name: 'Banana' },
+            { emoji: '🍊', name: 'Orange' },
+            { emoji: '🍇', name: 'Grape' },
+            { emoji: '🍓', name: 'Strawberry' },
+            { emoji: '🍉', name: 'Watermelon' },
+            { emoji: '🍑', name: 'Peach' },
+            { emoji: '🍒', name: 'Cherry' },
+            { emoji: '🍍', name: 'Pineapple' },
+            { emoji: '🥝', name: 'Kiwi' },
+            { emoji: '🍋', name: 'Lemon' },
+            { emoji: '🍈', name: 'Melon' },
+            { emoji: '🫐', name: 'Blueberry' },
+            { emoji: '🥭', name: 'Mango' },
+            { emoji: '🍐', name: 'Pear' },
+            { emoji: '🍑', name: 'Nectarine' },
+            { emoji: '🍇', name: 'Concord Grape' },
+            { emoji: '🍊', name: 'Tangerine' },
+            { emoji: '🍓', name: 'Raspberry' },
+            { emoji: '🍌', name: 'Plantain' }
         ];
 
         // Use unique emojis for games (avoid duplicates)
         const UNIQUE_FRUITS = [
-            { emoji: '🍎', name: 'apple' },
-            { emoji: '🍌', name: 'banana' },
-            { emoji: '🍊', name: 'orange' },
-            { emoji: '🍇', name: 'grape' },
-            { emoji: '🍓', name: 'strawberry' },
-            { emoji: '🍉', name: 'watermelon' },
-            { emoji: '🍑', name: 'peach' },
-            { emoji: '🍒', name: 'cherry' },
-            { emoji: '🍍', name: 'pineapple' },
-            { emoji: '🥝', name: 'kiwi' },
-            { emoji: '🍋', name: 'lemon' },
-            { emoji: '🍈', name: 'melon' },
-            { emoji: '🫐', name: 'blueberry' },
-            { emoji: '🥭', name: 'mango' },
-            { emoji: '🍐', name: 'pear' },
+            { emoji: '🍎', name: 'Apple' },
+            { emoji: '🍌', name: 'Banana' },
+            { emoji: '🍊', name: 'Orange' },
+            { emoji: '🍇', name: 'Grape' },
+            { emoji: '🍓', name: 'Strawberry' },
+            { emoji: '🍉', name: 'Watermelon' },
+            { emoji: '🍑', name: 'Peach' },
+            { emoji: '🍒', name: 'Cherry' },
+            { emoji: '🍍', name: 'Pineapple' },
+            { emoji: '🥝', name: 'Kiwi' },
+            { emoji: '🍋', name: 'Lemon' },
+            { emoji: '🍈', name: 'Melon' },
+            { emoji: '🫐', name: 'Blueberry' },
+            { emoji: '🥭', name: 'Mango' },
+            { emoji: '🍐', name: 'Pear' },
         ];
 
         // ═══════════════════════════════════════════════════════════════
@@ -1317,6 +1358,8 @@
         const gestureCameraStatus = document.getElementById('gestureCameraStatus');
         const gestureOverlay = document.getElementById('gesture-camera-overlay');
         const gestureStartBtn = document.getElementById('gesture-start-btn');
+        const gestureLoading = document.getElementById('gestureLoading');
+        const gestureContainer = document.getElementById('gestureContainer');
 
         // Modal refs
         const vocabModal = document.getElementById('vocab-modal');
@@ -1344,7 +1387,7 @@
                 });
                 resizeConfetti();
                 if (pageId === 'games') {
-                    setTimeout(resizeGestureCanvas, 300);
+                    setTimeout(resizeGestureCanvas, 400);
                 }
             });
         });
@@ -1743,7 +1786,7 @@
         }
 
         // ═══════════════════════════════════════════════════════════════
-        //  GAME 3: HAND GESTURE GAME (MediaPipe Hands)
+        //  GAME 3: HAND GESTURE GAME (MediaPipe Hands) - FIXED!
         // ═══════════════════════════════════════════════════════════════
         let gestureQuestions = [];
         let gestureIndex = 0;
@@ -1755,12 +1798,16 @@
         let gestureLeftGlow = false;
         let gestureRightGlow = false;
         let gestureCameraStarted = false;
+        let handsInstance = null;
+        let cameraInstance = null;
+        let gestureInitialized = false;
 
         // Gesture detection state
         let handRaisedStartTime = 0;
         const GESTURE_RAISE_THRESHOLD = 0.015;
         const GESTURE_DEBOUNCE_MS = 300;
         let gestureSmoothX = 0.5;
+        let gestureVideoReady = false;
 
         function initGestureGame() {
             const shuffled = [...UNIQUE_FRUITS].sort(() => Math.random() - 0.5);
@@ -1799,7 +1846,7 @@
 
         function renderGestureQuestion() {
             if (gestureIndex >= gestureQuestions.length) {
-                document.querySelector('.gesture-area .quiz-fruit-display')?.remove();
+                document.querySelector('#gestureArea .quiz-fruit-display')?.remove();
                 gestureFeedback.textContent = `🎊 You finished! Score: ${gestureScoreVal}/${gestureTotal}`;
                 gestureFeedback.className = 'gesture-feedback correct';
                 gestureProgress.textContent = '🎉 All done!';
@@ -1811,7 +1858,7 @@
             }
 
             const q = gestureQuestions[gestureIndex];
-            const fruitDisplay = document.querySelector('#gestureArea .quiz-fruit-display');
+            let fruitDisplay = document.querySelector('#gestureArea .quiz-fruit-display');
             if (fruitDisplay) {
                 fruitDisplay.textContent = q.emoji;
             } else {
@@ -1902,199 +1949,244 @@
             }, 500);
         }
 
-        // ─── GESTURE CAMERA SETUP ───
-        let gestureCameraInstance = null;
-
+        // ─── GESTURE CAMERA SETUP (FIXED) ───
         function resizeGestureCanvas() {
             const container = gestureVideo.parentElement;
             const rect = container.getBoundingClientRect();
-            gestureCanvas.width = rect.width;
-            gestureCanvas.height = rect.height;
+            if (rect.width > 0 && rect.height > 0) {
+                gestureCanvas.width = rect.width;
+                gestureCanvas.height = rect.height;
+            } else {
+                // Fallback: use container's offset dimensions
+                gestureCanvas.width = gestureContainer.offsetWidth || 400;
+                gestureCanvas.height = gestureContainer.offsetHeight || 300;
+            }
         }
 
         function initGestureCamera() {
-            if (gestureCameraStarted) return;
-            gestureCameraStarted = true;
+            if (gestureCameraStarted) {
+                // If already started but hidden, just show it
+                if (gestureOverlay) gestureOverlay.classList.add('hidden');
+                gestureCameraStatus.textContent = '📷 Camera: Ready';
+                return;
+            }
 
+            // Make sure the container is visible and has dimensions
+            const rect = gestureContainer.getBoundingClientRect();
+            if (rect.width === 0 || rect.height === 0) {
+                // Container not visible yet, retry after a delay
+                gestureCameraStatus.textContent = '⏳ Waiting for container...';
+                setTimeout(() => {
+                    gestureCameraStarted = false;
+                    initGestureCamera();
+                }, 500);
+                return;
+            }
+
+            gestureCameraStarted = true;
+            gestureLoading.classList.add('show');
             gestureOverlay.classList.add('hidden');
             gestureCameraStatus.textContent = '📷 Starting camera...';
 
-            const hands = new Hands({
-                locateFile: (file) => {
-                    return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
-                }
-            });
+            // Resize canvas first
+            resizeGestureCanvas();
 
-            hands.setOptions({
-                maxNumHands: 1,
-                modelComplexity: 1,
-                minDetectionConfidence: 0.7,
-                minTrackingConfidence: 0.6,
-            });
+            // Create MediaPipe Hands instance
+            try {
+                handsInstance = new Hands({
+                    locateFile: (file) => {
+                        return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
+                    }
+                });
 
-            hands.onResults((results) => {
-                const w = gestureCanvas.width;
-                const h = gestureCanvas.height;
-                gestureCtx.clearRect(0, 0, w, h);
+                handsInstance.setOptions({
+                    maxNumHands: 1,
+                    modelComplexity: 1,
+                    minDetectionConfidence: 0.7,
+                    minTrackingConfidence: 0.6,
+                });
 
-                if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-                    const landmarks = results.multiHandLandmarks[0];
-                    const wrist = landmarks[0];
-                    const indexTip = landmarks[8];
+                handsInstance.onResults((results) => {
+                    const w = gestureCanvas.width;
+                    const h = gestureCanvas.height;
+                    gestureCtx.clearRect(0, 0, w, h);
 
-                    gestureCtx.shadowBlur = 15;
-                    gestureCtx.shadowColor = 'rgba(126, 232, 250, 0.5)';
+                    if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+                        const landmarks = results.multiHandLandmarks[0];
+                        const wrist = landmarks[0];
+                        const indexTip = landmarks[8];
 
-                    const connections = [
-                        [0, 1],
-                        [1, 2],
-                        [2, 3],
-                        [3, 4],
-                        [0, 5],
-                        [5, 6],
-                        [6, 7],
-                        [7, 8],
-                        [0, 9],
-                        [9, 10],
-                        [10, 11],
-                        [11, 12],
-                        [0, 13],
-                        [13, 14],
-                        [14, 15],
-                        [15, 16],
-                        [0, 17],
-                        [17, 18],
-                        [18, 19],
-                        [19, 20]
-                    ];
-                    gestureCtx.strokeStyle = 'rgba(126, 232, 250, 0.7)';
-                    gestureCtx.lineWidth = 3;
-                    connections.forEach(([i, j]) => {
-                        if (i < landmarks.length && j < landmarks.length) {
-                            const p1 = landmarks[i];
-                            const p2 = landmarks[j];
-                            if (p1.visibility > 0.5 && p2.visibility > 0.5) {
-                                gestureCtx.beginPath();
-                                gestureCtx.moveTo(p1.x * w, p1.y * h);
-                                gestureCtx.lineTo(p2.x * w, p2.y * h);
-                                gestureCtx.stroke();
+                        // Draw hand landmarks
+                        gestureCtx.shadowBlur = 15;
+                        gestureCtx.shadowColor = 'rgba(126, 232, 250, 0.5)';
+
+                        const connections = [
+                            [0, 1],
+                            [1, 2],
+                            [2, 3],
+                            [3, 4],
+                            [0, 5],
+                            [5, 6],
+                            [6, 7],
+                            [7, 8],
+                            [0, 9],
+                            [9, 10],
+                            [10, 11],
+                            [11, 12],
+                            [0, 13],
+                            [13, 14],
+                            [14, 15],
+                            [15, 16],
+                            [0, 17],
+                            [17, 18],
+                            [18, 19],
+                            [19, 20]
+                        ];
+                        gestureCtx.strokeStyle = 'rgba(126, 232, 250, 0.7)';
+                        gestureCtx.lineWidth = 3;
+                        connections.forEach(([i, j]) => {
+                            if (i < landmarks.length && j < landmarks.length) {
+                                const p1 = landmarks[i];
+                                const p2 = landmarks[j];
+                                if (p1.visibility > 0.5 && p2.visibility > 0.5) {
+                                    gestureCtx.beginPath();
+                                    gestureCtx.moveTo(p1.x * w, p1.y * h);
+                                    gestureCtx.lineTo(p2.x * w, p2.y * h);
+                                    gestureCtx.stroke();
+                                }
                             }
-                        }
-                    });
+                        });
 
-                    landmarks.forEach((p, i) => {
-                        if (p.visibility > 0.5) {
-                            const x = p.x * w,
-                                y = p.y * h;
-                            const radius = (i === 8 || i === 12) ? 10 : 5;
-                            const color = (i === 8 || i === 12) ? 'rgba(0, 200, 255, 0.9)' :
-                            'rgba(255,255,255,0.6)';
-                            gestureCtx.shadowBlur = 20;
-                            gestureCtx.shadowColor = 'rgba(126, 232, 250, 0.4)';
-                            gestureCtx.beginPath();
-                            gestureCtx.arc(x, y, radius, 0, 2 * Math.PI);
-                            gestureCtx.fillStyle = color;
-                            gestureCtx.fill();
-                            if (i === 8 || i === 12) {
-                                gestureCtx.shadowBlur = 35;
-                                gestureCtx.shadowColor = 'rgba(0, 200, 255, 0.3)';
+                        // Draw joints with glow
+                        landmarks.forEach((p, i) => {
+                            if (p.visibility > 0.5) {
+                                const x = p.x * w,
+                                    y = p.y * h;
+                                const radius = (i === 8 || i === 12) ? 10 : 5;
+                                const color = (i === 8 || i === 12) ? 'rgba(0, 200, 255, 0.9)' :
+                                    'rgba(255,255,255,0.6)';
+                                gestureCtx.shadowBlur = 20;
+                                gestureCtx.shadowColor = 'rgba(126, 232, 250, 0.4)';
                                 gestureCtx.beginPath();
-                                gestureCtx.arc(x, y, radius + 8, 0, 2 * Math.PI);
-                                gestureCtx.fillStyle = 'rgba(0, 200, 255, 0.1)';
+                                gestureCtx.arc(x, y, radius, 0, 2 * Math.PI);
+                                gestureCtx.fillStyle = color;
                                 gestureCtx.fill();
+                                if (i === 8 || i === 12) {
+                                    gestureCtx.shadowBlur = 35;
+                                    gestureCtx.shadowColor = 'rgba(0, 200, 255, 0.3)';
+                                    gestureCtx.beginPath();
+                                    gestureCtx.arc(x, y, radius + 8, 0, 2 * Math.PI);
+                                    gestureCtx.fillStyle = 'rgba(0, 200, 255, 0.1)';
+                                    gestureCtx.fill();
+                                }
+                            }
+                        });
+
+                        // ─── GESTURE DETECTION ───
+                        const indexY = indexTip.y;
+                        const wristY = wrist.y;
+                        const raised = indexY < wristY - GESTURE_RAISE_THRESHOLD;
+
+                        const rawX = indexTip.x;
+                        gestureSmoothX = gestureSmoothX * 0.6 + rawX * 0.4;
+                        const side = gestureSmoothX < 0.5 ? 'left' : 'right';
+
+                        if (raised && !gestureCooldown && !gestureAnswered) {
+                            if (side === 'left') {
+                                gestureOptLeft.classList.add('glow-left');
+                                gestureOptRight.classList.remove('glow-right');
+                                gestureLeftGlow = true;
+                                gestureRightGlow = false;
+                                gestureStatus.innerHTML =
+                                    `<span class="hand-icon">👈</span> <span>Left hand detected! <span class="direction-hint">Tap to select</span></span>`;
+                            } else {
+                                gestureOptRight.classList.add('glow-right');
+                                gestureOptLeft.classList.remove('glow-left');
+                                gestureRightGlow = true;
+                                gestureLeftGlow = false;
+                                gestureStatus.innerHTML =
+                                    `<span class="hand-icon">👉</span> <span>Right hand detected! <span class="direction-hint">Tap to select</span></span>`;
+                            }
+
+                            if (handRaisedStartTime === 0) {
+                                handRaisedStartTime = performance.now();
+                            } else {
+                                const elapsed = performance.now() - handRaisedStartTime;
+                                if (elapsed > GESTURE_DEBOUNCE_MS && !gestureHandActive) {
+                                    gestureHandActive = true;
+                                    handleGestureAnswer(side);
+                                }
+                            }
+                        } else {
+                            if (!raised) {
+                                handRaisedStartTime = 0;
+                                gestureHandActive = false;
+                            }
+                            if (!gestureAnswered && !gestureCooldown) {
+                                gestureOptLeft.classList.remove('glow-left');
+                                gestureOptRight.classList.remove('glow-right');
+                                gestureLeftGlow = false;
+                                gestureRightGlow = false;
+                                if (!gestureAnswered) {
+                                    gestureStatus.innerHTML =
+                                        `<span class="hand-icon">✋</span> <span>Raise your left or right hand!</span>`;
+                                }
                             }
                         }
-                    });
 
-                    const imageWidth = gestureVideo.videoWidth || 640;
-                    const imageHeight = gestureVideo.videoHeight || 480;
-
-                    const indexY = indexTip.y;
-                    const wristY = wrist.y;
-                    const raised = indexY < wristY - GESTURE_RAISE_THRESHOLD;
-
-                    const rawX = indexTip.x;
-                    gestureSmoothX = gestureSmoothX * 0.6 + rawX * 0.4;
-
-                    const side = gestureSmoothX < 0.5 ? 'left' : 'right';
-
-                    if (raised && !gestureCooldown && !gestureAnswered) {
-                        if (side === 'left') {
-                            gestureOptLeft.classList.add('glow-left');
-                            gestureOptRight.classList.remove('glow-right');
-                            gestureLeftGlow = true;
-                            gestureRightGlow = false;
-                            gestureStatus.innerHTML =
-                                `<span class="hand-icon">👈</span> <span>Left hand detected! <span class="direction-hint">Tap to select</span></span>`;
-                        } else {
-                            gestureOptRight.classList.add('glow-right');
-                            gestureOptLeft.classList.remove('glow-left');
-                            gestureRightGlow = true;
-                            gestureLeftGlow = false;
-                            gestureStatus.innerHTML =
-                                `<span class="hand-icon">👉</span> <span>Right hand detected! <span class="direction-hint">Tap to select</span></span>`;
-                        }
-
-                        if (handRaisedStartTime === 0) {
-                            handRaisedStartTime = performance.now();
-                        } else {
-                            const elapsed = performance.now() - handRaisedStartTime;
-                            if (elapsed > GESTURE_DEBOUNCE_MS && !gestureHandActive) {
-                                gestureHandActive = true;
-                                handleGestureAnswer(side);
-                            }
-                        }
+                        gestureCameraStatus.textContent = '📷 Camera: Active';
+                        if (gestureLoading) gestureLoading.classList.remove('show');
                     } else {
-                        if (!raised) {
-                            handRaisedStartTime = 0;
-                            gestureHandActive = false;
-                        }
                         if (!gestureAnswered && !gestureCooldown) {
                             gestureOptLeft.classList.remove('glow-left');
                             gestureOptRight.classList.remove('glow-right');
-                            gestureLeftGlow = false;
-                            gestureRightGlow = false;
-                            if (!gestureAnswered) {
-                                gestureStatus.innerHTML =
-                                    `<span class="hand-icon">✋</span> <span>Raise your left or right hand!</span>`;
-                            }
+                            gestureStatus.innerHTML =
+                                `<span class="hand-icon">✋</span> <span>Raise your hand to answer!</span>`;
                         }
+                        gestureCameraStatus.textContent = '📷 Camera: Active - No hand detected';
+                        if (gestureLoading) gestureLoading.classList.remove('show');
                     }
+                });
 
-                    gestureCameraStatus.textContent = '📷 Camera: Active';
-                } else {
-                    if (!gestureAnswered && !gestureCooldown) {
-                        gestureOptLeft.classList.remove('glow-left');
-                        gestureOptRight.classList.remove('glow-right');
-                        gestureStatus.innerHTML =
-                            `<span class="hand-icon">✋</span> <span>Raise your hand to answer!</span>`;
+                // Create camera
+                const CameraUtil = Camera;
+                cameraInstance = new CameraUtil(gestureVideo, {
+                    onFrame: async () => {
+                        try {
+                            if (handsInstance && gestureVideo.readyState >= 2) {
+                                await handsInstance.send({ image: gestureVideo });
+                            }
+                        } catch (_) { /* ignore frame errors */ }
+                    },
+                    width: 640,
+                    height: 480,
+                    facingMode: 'user',
+                });
+
+                cameraInstance.start().then(() => {
+                    gestureCameraStatus.textContent = '📷 Camera: Ready!';
+                    gestureVideoReady = true;
+                    if (gestureLoading) gestureLoading.classList.remove('show');
+                    resizeGestureCanvas();
+                    if (!gestureInitialized) {
+                        initGestureGame();
+                        gestureInitialized = true;
                     }
-                    gestureCameraStatus.textContent = '📷 Camera: Active - No hand detected';
-                }
-            });
+                }).catch((err) => {
+                    console.warn('Gesture camera error:', err);
+                    gestureCameraStatus.textContent = '⚠️ Camera error: ' + (err.message || 'Please allow camera access.');
+                    gestureOverlay.classList.remove('hidden');
+                    gestureCameraStarted = false;
+                    if (gestureLoading) gestureLoading.classList.remove('show');
+                });
 
-            const camera = new Camera(gestureVideo, {
-                onFrame: async () => {
-                    try {
-                        await hands.send({ image: gestureVideo });
-                    } catch (_) { /* ignore */ }
-                },
-                width: 640,
-                height: 480,
-                facingMode: 'user',
-            });
-
-            gestureCameraInstance = camera;
-            camera.start().then(() => {
-                gestureCameraStatus.textContent = '📷 Camera: Ready!';
-                resizeGestureCanvas();
-                initGestureGame();
-            }).catch((err) => {
-                console.warn('Gesture camera error:', err);
-                gestureCameraStatus.textContent = '⚠️ Camera error. Please allow camera access.';
+            } catch (err) {
+                console.warn('Error initializing MediaPipe:', err);
+                gestureCameraStatus.textContent = '⚠️ Error: ' + (err.message || 'Could not start camera.');
                 gestureOverlay.classList.remove('hidden');
                 gestureCameraStarted = false;
-            });
+                if (gestureLoading) gestureLoading.classList.remove('show');
+            }
         }
 
         // ─── Gesture Camera Start ───
@@ -2107,9 +2199,18 @@
             initGestureCamera();
         });
 
+        // Resize canvas on window resize and tab switch
         window.addEventListener('resize', () => {
             resizeGestureCanvas();
         });
+
+        // Also resize when the games tab becomes visible
+        const gamesTabBtn = document.querySelector('[data-page="games"]');
+        if (gamesTabBtn) {
+            gamesTabBtn.addEventListener('click', () => {
+                setTimeout(resizeGestureCanvas, 500);
+            });
+        }
 
         // ═══════════════════════════════════════════════════════════════
         //  CONFETTI
@@ -2217,6 +2318,14 @@
         console.log('🍌 20 fruits, sentence practice, matching game, quiz, and gesture game!');
         console.log('🎮 Have fun learning!');
         console.log('✋ For the gesture game, tap "Start Camera" to begin!');
+
+        // Auto-initialize gesture camera when user clicks on the gesture area
+        document.querySelector('#gameGesture')?.addEventListener('click', (e) => {
+            if (!gestureCameraStarted && e.target.closest('.gesture-area')) {
+                // Only if they clicked on the gesture area but not on the start button specifically
+                // The start button has its own handler
+            }
+        });
     </script>
 
 </body>
